@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+  <link rel="stylesheet" href="css/style.css">
+  <title>Guess & Draw</title>
+</head>
+<!-- <body onbeforeunload="return avoidReload()"> -->
+  <body>
+  <div class="title" style="padding-top: 20px;">Guess & Draw </div>
+  <div id="leaveButton" class="leaveBtn"><a href="/lounge" class="btn">離開房間</a></div>
+  <div class="chat-container">
+    <div class="grid-container">
+      <div class="whiteboard-container">
+        <canvas class="whiteboard" ></canvas>
+    </div>
+    <div class="colors">
+      <div class="colorBtn-container">
+        <div class="color black"></div>
+        <div class="color red"></div>
+        <div class="color green"></div>
+        <div class="color blue"></div>
+        <div class="color yellow"></div>
+        <div id="rubber" style="font-size:45px"><i class="fa-solid fa-eraser"></i></div>
+      </div>
+    </div>     
+    </div>
+ 
+    <main class="chat-main">
+      <div class="sidebar-container"> 
+        <div class="chat-sidebar">
+          <h3><i class="fa-regular fa-hourglass"></i>&ensp;計時器: <span id="counter">65</span>s &emsp;<button class="btn" id="startCounter">開始遊戲</button></h3>
+          <h3><i class="fas fa-comments"></i> 房間名稱:</h3>
+          <h2 id="room-name"></h2>
+          <h3><i class="fas fa-users"></i> 用戶</h3>
+          <ul id="users"></ul>
+        </div>
+      </div>
+      <div class="chat-messages"></div>
+      <div class="rankingBG">
+        <div class="rankingTitle"><img src="./img/ranking.png" width="30px" height="30px">&ensp;排行榜</div>
+        <div style="padding: 15px;"><ul id="ranking"></ul></div>
+      </div>
+    </main>
+      <div class="chat-form-container">
+        <form id="chat-form">
+          <input
+            id="msg"
+            type="text"
+            placeholder="輸入文字..."
+            required
+            autocomplete="off"
+          />
+          <button id="sendMsg" class="btn"><i class="fas fa-paper-plane"></i> 發送</button>
+        </form>
+      </div>
+  </div>
+  <script src="https://kit.fontawesome.com/9846da141f.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.11.0/qs.min.js" integrity="sha512-/l6vieC+YxaZywUhmqs++8uF9DeMvJE61ua5g+UK0TuHZ4TkTgB1Gm1n0NiA86uEOM9JJ6JUwyR0hboKO0fCng==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/draw.js"></script>
+  <script src="/js/chat.js"></script>
+</body>
+</html>

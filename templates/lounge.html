@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+  <link rel="stylesheet" href="css/style.css">
+  <title>Guess & Draw</title>
+</head>
+<body>
+  <div id="cover"></div>
+  <div class="title" style="padding-top: 20px;">Guess & Draw </div>
+  <div id="leaveButton" class="leaveBtn"><a href="/" class="btn">返回首頁</a></div>
+  <div class="lounge-container">
+    <div class="roomAreaGrid">
+    </div>
+    
+    <div class="flex-box">
+      <div id="empty-area">
+        <div id="emptyRoom">現在沒有房間</div><br>
+      </div>
+      <div><button id="createRoom" class="btn">創建新房間</button></div>
+      <div id="createRoomDiv">
+        <form id="createRoomForm">
+          <div class="form-control">
+            <label for="room"><i class="fa-solid fa-door-open"></i>&ensp;房間:</label>
+            <input
+              type="text"
+              name="room" 
+              id="room"
+              placeholder="輸入房間..."
+              required
+            />
+          </div>
+          <button id="play" type="submit" class="btn">來玩嘍 !</button>
+          <button id="cancel" class="btn">取消</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script src="https://kit.fontawesome.com/9846da141f.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.11.0/qs.min.js" integrity="sha512-/l6vieC+YxaZywUhmqs++8uF9DeMvJE61ua5g+UK0TuHZ4TkTgB1Gm1n0NiA86uEOM9JJ6JUwyR0hboKO0fCng==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/lounge.js"></script>
+</body>
+</html>

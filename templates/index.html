@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css"
+			integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk="
+			crossorigin="anonymous"
+		/>
+		<link rel="stylesheet" href="css/style.css" />
+		<title>Guess & Draw</title>
+	</head>
+	<body>
+		<div class="background">
+			<div class="join-container">
+				<header class="join-header">
+					<h1 class="title"><i class="fa-solid fa-palette"></i>&nbspGuess & Draw</h1>
+				</header>
+				<main class="join-main">
+					<form id="entryForm">
+						<div class="form-control">
+							<label for="username"><i class="fa-solid fa-user" style="width: 22.5px;"></i>&ensp;暱稱:</label>
+							<input
+								type="text"
+								name="username"
+								id="username"
+								placeholder="輸入暱稱..."
+								required
+							/>
+						</div>
+						<button type="submit" class="btn">進入大廳</button>
+					</form>
+				</main>
+			</div>
+		</div>
+		<script src="/socket.io/socket.io.js"></script>
+		<script src="/js/common.js"></script>
+		<script type="text/javascript" src="/js/index.js" ></script>
+		<script src="https://kit.fontawesome.com/9846da141f.js" crossorigin="anonymous"></script>
+	</body>
+</html>
