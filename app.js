@@ -22,6 +22,7 @@ let startGame = false;
 let total = 415;
 let guessWord = '';
 let getCounter = 0;
+let clearSession = false;
 
 let drawWords = [
   '鐮刀','雞毛撣子','水錶','扳手','螺絲刀','指甲鉗','梳子','電鑽','錘子','公雞'
@@ -137,6 +138,7 @@ io.on("connection",(socket) =>{
     if(socket.request.session.username && socket.request.session.room){
         username = socket.request.session.username;
         room = socket.request.session.room;
+        clearSession = false;
         let host = false;
         if(getRoomUsers(room).length < 1)
           host = true;
@@ -145,7 +147,7 @@ io.on("connection",(socket) =>{
         io.emit('reloadLoungeStatus');
         socket.join(user.room);
         
-        socket.emit('host', host,username);
+        socket.emit('host', host,username,startGame);
         // Send to single user
         // Welcome current connected user
         socket.emit('message', formatMessage('管理員','歡迎!!^^'));
@@ -164,7 +166,11 @@ io.on("connection",(socket) =>{
           io.to(users[i].id).emit('identify', users[i].username);
         }
     }
-  
+
+socket.on("clearSession", (value,callback)=>{ 
+      clearSession = value;
+      callback(true);
+})
 
   // Run when client disconnect
   socket.on("disconnect", ()=>{
@@ -173,15 +179,17 @@ io.on("connection",(socket) =>{
      if (socket.request.session.room) {
       //delete socket.request.session.username;
       checkOutRoom(socket.request.session.room);
-      delete socket.request.session.room;
-      socket.request.session.save();
+      if (clearSession) {
+        delete socket.request.session.room;
+        socket.request.session.save();
+      }
       const user = userLeave(socket.id);
       console.log(socket.request.session);
       if(user){
         let otherRoomUsers = getRoomUsers(user.room);
         if(otherRoomUsers.length > 0){
           otherRoomUsers[0].host = true; // Set other ppl to host
-          io.to(otherRoomUsers[0].id).emit('host', true, otherRoomUsers[0].username);
+          io.to(otherRoomUsers[0].id).emit('host', true, otherRoomUsers[0].username,startGame);
         }
           
         io.to(user.room).emit('message', formatMessage('管理員',`${user.username} 離開了`));
@@ -235,7 +243,7 @@ io.on("connection",(socket) =>{
     for (let i = 0; i < listofplayer.length; i++) {
       listofplayer[i].point = 0;   // Reset players point to zero
     }
-    io.to(user.room).emit('message', formatMessage('管理員',`遊戲開始嘍!!!!!`));
+    //io.to(user.room).emit('message', formatMessage('管理員',`遊戲開始嘍!!!!!`));
     // Game start
     gameStart(counter,listofplayer); 
 
@@ -251,13 +259,9 @@ function gameStart(counter,listofplayer){
   let checked = true; // avoid looping when all user answer correctly
   let temp;
   startGame = true;
-
-
   guessWord = drawWords[Math.floor(Math.random() * total)];
-  io.to(currentRoom).emit('action',{name:'gameStartPreparation',msg:formatMessage('管理員',`現在是${listofplayer[currentDrawer].username}畫畫`)});
-  io.to(listofplayer[currentDrawer].id).emit('action',{name:'gameDrawer',msg:formatMessage('管理員',`題目是${guessWord}`)});
-  //io.to(currentRoom).emit('message', formatMessage('管理員',`現在是${listofplayer[currentDrawer].username}畫畫`));
-  //io.to(listofplayer[currentDrawer].id).emit('message', formatMessage('管理員',`題目是${guessWord}`));
+  io.to(currentRoom).emit('action',{name:'gameStartPreparation',msg:formatMessage('管理員',`遊戲開始嘍!!!!! 現在是${listofplayer[currentDrawer].username}畫畫`)});
+  io.to(listofplayer[currentDrawer].id).emit('action',{name:'gameDrawer',msg:`題目:${guessWord}`});
   let countDown = setInterval(()=>{
     counter--;
     if(getCorrectPpl(currentRoom).length === (listofplayer.length-1) && checked){
@@ -267,7 +271,7 @@ function gameStart(counter,listofplayer){
     getCounter = counter;
     io.to(currentRoom).emit('counter',counter);
     if (counter === 5) {
-      io.to(currentRoom).emit('action','onlyLockWhiteboard');
+      io.to(currentRoom).emit('action',{name:'onlyLockWhiteboard',msg:`上回答案是${guessWord}`});
     }
     if (counter === 0) {
       listofplayer = getRoomUsers(currentRoom); 
@@ -278,9 +282,7 @@ function gameStart(counter,listofplayer){
         let rankingArr = rankings(temp);
         io.to(currentRoom).emit('updateRanking',rankingArr,listofplayer);
       }
-      io.to(currentRoom).emit('action',{name:'clearRound', msg:formatMessage('管理員',`上回答案是${guessWord}`)});
-      //io.to(currentRoom).emit('clearCanvas','');
-      //io.to(currentRoom).emit('message', formatMessage('管理員',`上回答案是${guessWord}`));
+      io.to(currentRoom).emit('action',{name:'clearRound'});
       checked = true;
       counter = 65;
       currentDrawer++;
@@ -288,7 +290,6 @@ function gameStart(counter,listofplayer){
       if (Math.max.apply(Math, temp) >= winScore || stopGame) {
         guessWord = '';
         clearInterval(countDown);
-        //io.to(currentRoom).emit('action','endGame');
         startGame = false;
         if (stopGame){
           io.to(currentRoom).emit('action', {name:'endGame', msg:formatMessage('管理員',`遊戲人數不足,遊戲結束!!`)});
@@ -302,9 +303,7 @@ function gameStart(counter,listofplayer){
           currentDrawer = 0;
         guessWord = drawWords[Math.floor(Math.random() * total)];
         io.to(currentRoom).emit('action',{name:'nextRoundPreparation',msg:formatMessage('管理員',`現在輪到${listofplayer[currentDrawer].username}畫畫`)});
-        //io.to(currentRoom).emit('message', formatMessage('管理員',`現在輪到${listofplayer[currentDrawer].username}畫畫`));
-        io.to(listofplayer[currentDrawer].id).emit('action', {name:'gameDrawer',msg:formatMessage('管理員',`題目是${guessWord}`)});
-        //io.to(listofplayer[currentDrawer].id).emit('action','unlockCanvas');
+        io.to(listofplayer[currentDrawer].id).emit('action', {name:'gameDrawer',msg:`題目:${guessWord}`});
       }
     }  
   },1000)
