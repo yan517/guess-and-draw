@@ -1,6 +1,24 @@
 const users = [];
-let answers = [];
+let correctedPpl = [];
 let confirmLeave = false;
+let answer = [];
+
+function setAnswer(room,word,playing){
+    answer.push({room,word,playing});
+    console.log(answer);
+    return answer;
+}
+
+function getAnswer(room){
+    return answer.filter(ans => ans.room === room);
+}
+
+function clearAnswer(room){
+    const index = answer.findIndex(ans => ans.room === room);
+    if(index !== -1){
+        return answer.splice(index,1)[0];
+    }
+}
 
 // Join user to chat 
 function userJoin(id, username, room , host){
@@ -29,18 +47,21 @@ function getRoomUsers(room){
 }
 
 function setCorrectPpl(room,id){
-    const answer = {room, id};
-    answers.push(answer);
-    return answer;
+    const info = {room, id};
+    correctedPpl.push(info);
+    return info;
 }
 
 function getCorrectPpl(room){
-    return answers.filter(answer => answer.room === room);
+    return correctedPpl.filter(correctPpl => correctPpl.room === room);
 }
 
-function clearCorrectPpl(){
-    answers = [];
-    return answers;
+function clearCorrectPpl(room){
+    const index = correctedPpl.findIndex(correctPpl => correctPpl.room === room);
+    if(index !== -1){
+        return correctedPpl.splice(index,1)[0];
+    }
+    return correctedPpl;
 }
 
 function getConfirmLeave(){
@@ -66,5 +87,8 @@ module.exports = {
     clearCorrectPpl,
     getConfirmLeave,
     setConfirmLeave,
-    getUsers
+    getUsers,
+    setAnswer,
+    getAnswer,
+    clearAnswer
 };

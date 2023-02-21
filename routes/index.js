@@ -4,8 +4,7 @@ const repo = require('../utils/init.js');
 
 router.post('/', (req, res, then) => {
     if(req.body){
-        req.session.authenticated = true;
-        req.session.username = req.body.username;
+        //req.session.username = req.body.username;
         return res.json({ status: 'success', result: {username:req.body.username}})
     }else   
         return res.json({ status: 'error', result: "發生錯誤"})

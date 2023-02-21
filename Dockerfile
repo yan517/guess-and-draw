@@ -1,6 +1,6 @@
 FROM node:latest
 
-COPY app.js package.json /app/
+COPY app.js socket.js package.json /app/
 
 COPY routes /app/routes
 
