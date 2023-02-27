@@ -12,6 +12,7 @@ let session = require("express-session")({
   saveUninitialized: false
 });
 
+
 /* const cors = require("cors"); */
 const PORT = process.env.PORT || 3500;
 
@@ -58,8 +59,6 @@ app.get("/chat", (req,res) =>{
 const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
 
 io.use(wrap(session));
-
-
 
 // Load Socket.IO controller
 //const socketController = require('./socket')(io);

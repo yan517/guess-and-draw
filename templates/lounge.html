@@ -22,6 +22,7 @@
       <div id="createRoomDiv">
         <form id="createRoomForm">
           <div class="form-control">
+            <div>
             <label for="room"><i class="fa-solid fa-door-open"></i>&ensp;房間:</label>
             <input
               type="text"
@@ -30,6 +31,37 @@
               placeholder="輸入房間..."
               required
             />
+          </div>
+            <div>            
+              <label><i class="fas fa-users"></i>&ensp;人數:</label>
+              <select id="numOfppl">
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+                <option value="50">50</option>
+              </select>
+            </div>
+          <div>
+            <label><i class="fa-sharp fa-regular fa-star"></i>&ensp;得分:</label>
+            <select id="score">
+              <option value="70">70</option>
+              <option value="100">100</option>
+              <option value="120">120</option>
+              <option value="150">150</option>
+              <option value="180">180</option>
+              <option value="240">240</option>
+              <option value="360">360</option>
+              <option value="480">480</option>
+            </select>
+          </div>
           </div>
           <button id="play" type="submit" class="btn">來玩嘍 !</button>
           <button id="cancel" class="btn">取消</button>

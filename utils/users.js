@@ -47,13 +47,24 @@ function getRoomUsers(room){
 }
 
 function setCorrectPpl(room,id){
-    const info = {room, id};
-    correctedPpl.push(info);
-    return info;
+    const index = correctedPpl.findIndex(correctPpl => correctPpl.room === room);
+    if(index !== -1){
+        correctedPpl[index].pplArr.push(id);
+        correctedPpl[index].count++;
+    }else{
+        let pplArr = [];
+        pplArr.push(id);
+        correctedPpl.push({room,pplArr,count:1});
+    }
+    console.log(correctedPpl);
 }
 
 function getCorrectPpl(room){
-    return correctedPpl.filter(correctPpl => correctPpl.room === room);
+    const index = correctedPpl.findIndex(correctPpl => correctPpl.room === room);
+    if(index !== -1){
+        return correctedPpl[index];
+    }
+    return 0;//correctedPpl.filter(correctPpl => correctPpl.room === room);
 }
 
 function clearCorrectPpl(room){

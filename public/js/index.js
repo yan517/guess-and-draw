@@ -23,8 +23,8 @@ const goToLounge = async (username) => {
     });
     const json = await response.json();
      if (json.status == "success"){
-        sessionStorage.setItem("usernameStart", json.result.username);
+        sessionStorage.setItem("username", json.result.username);
         window.location.href = `/lounge`;
     }else
-        alert(json.status);  
+        alert(json.result);  
 }

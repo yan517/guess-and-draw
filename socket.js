@@ -1,6 +1,6 @@
 const { formatMessage, rankings } = require('./utils/util');
 const { userJoin, getCurrentUser, userLeave, getRoomUsers, setCorrectPpl, getCorrectPpl, clearCorrectPpl, setAnswer, getAnswer, clearAnswer } = require('./utils/users');
-const { setRoomName, checkOutRoom } = require('./utils/lounge');
+const { setRoomName, checkOutRoom,getRoomSatus} = require('./utils/lounge');
 
 let total = 575;
 let getCounter = 0;
@@ -76,7 +76,7 @@ module.exports = function (io) {
   // Run when client connect
   io.on("connection", (socket) => {
     console.log(`User Connected: ${socket.id}`)
-    socket.on("join-room", () => {
+    socket.on("join-room", async () => {
       console.log(socket.request.session);
       username = socket.request.session.username;
       room = socket.request.session.room;
@@ -124,7 +124,7 @@ module.exports = function (io) {
     })
 
     // Run when client disconnect
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       console.log(`User disConnected: ${socket.id}`);
       if (socket.request.session.room) {
         //console.log(socket.request.session);
@@ -139,6 +139,7 @@ module.exports = function (io) {
           if (otherRoomUsers.length > 0) {
             otherRoomUsers[0].host = true; // Set other ppl to host
             let startGame = startGameOrNot(otherRoomUsers[0].room);
+            getRoomSatus(otherRoomUsers[0].room)[0].host = otherRoomUsers[0].username;
             io.to(otherRoomUsers[0].id).emit('host', true, otherRoomUsers[0].username, startGame);
           }
 
@@ -177,13 +178,20 @@ module.exports = function (io) {
       if (startGame) {
         let guessWord = getAnswer(user.room);
         if (msg === guessWord[0].word) {
-          let value = getCounter;
-          user.point += value;
-          //io.to(socket.id).emit('message',formatMessage(user.username, msg));
-          io.to(socket.id).emit('action', { name: 'correctResponse', msg: formatMessage(user.username, msg) });
-          io.to(user.room).emit('message', formatMessage('管理員', `恭喜${user.username}答對了! 加了${value}分，目前分數是${user.point}`));
-
-          setCorrectPpl(user.room, user.id);
+          let check = true;
+          if(getCorrectPpl(user.room)){
+            if(getCorrectPpl(user.room).pplArr.includes(socket.id))
+              check = false;
+          }
+          if(check){
+            let value = getCounter;
+            user.point += value;
+            io.to(socket.id).emit('action', { name: 'correctResponse', msg: formatMessage(user.username, msg) });
+            io.to(user.room).emit('message', formatMessage('管理員', `恭喜${user.username}答對了! 加了${value}分，目前分數是${user.point}`));            
+            setCorrectPpl(user.room, user.id);
+          }else {
+            io.to(user.room).emit('message', formatMessage(user.username, msg));
+          }  
         } else {
           io.to(user.room).emit('message', formatMessage(user.username, msg));
         }
@@ -213,10 +221,11 @@ module.exports = function (io) {
 
   function gameStart(counter, listofplayer) {
     //console.log(listofplayer);
-    let winScore = 300;
     let currentDrawer = 0;
     let stopGame = false;
     let currentRoom = listofplayer[currentDrawer].room;
+    let roomSatus = getRoomSatus(currentRoom);
+    let winScore = roomSatus[0].score;
     let checked = true; // avoid looping when all user answer correctly
     let temp;
     let guessWord = drawWords[Math.floor(Math.random() * total)];
@@ -225,7 +234,7 @@ module.exports = function (io) {
     io.to(listofplayer[currentDrawer].id).emit('action', { name: 'gameDrawer', msg: `題目:${guessWord}` });
     let countDown = setInterval(() => {
       counter--;
-      if (getCorrectPpl(currentRoom).length === (listofplayer.length - 1) && checked) {
+      if (getCorrectPpl(currentRoom).count === (listofplayer.length - 1) && checked) {
         counter = 5;
         checked = false;
       }

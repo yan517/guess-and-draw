@@ -18,13 +18,13 @@ let context = canvas.getContext('2d');
   canvas.addEventListener('mousedown', onMouseDown, false);
   canvas.addEventListener('mouseup', onMouseUp, false);
   canvas.addEventListener('mouseout', onMouseUp, false);
-  canvas.addEventListener('mousemove', throttle(onMouseMove, 10), false);
+  canvas.addEventListener('mousemove', onMouseMove, false);
   
   //Touch support for mobile devices
-/*   canvas.addEventListener('touchstart', onMouseDown, false);
+  canvas.addEventListener('touchstart', onMouseDown, false);
   canvas.addEventListener('touchend', onMouseUp, false);
   canvas.addEventListener('touchcancel', onMouseUp, false);
-  canvas.addEventListener('touchmove', throttle(onMouseMove, 10), false); */
+  canvas.addEventListener('touchmove', onMouseMove, 10, false); 
 
   for (let i = 0; i < colors.length; i++){
     colors[i].addEventListener('click', onColorUpdate, false);
@@ -44,10 +44,15 @@ let context = canvas.getContext('2d');
 
   function drawLine(x0, y0, x1, y1, color, erase, emit){
     //let sidebarWidth = document.querySelector('.chat-sidebar').clientWidth;
-    let minusX = window.innerWidth*0.2;
-    let margin = 120;
+    //let minusX = window.innerWidth*0.2+3;
+    let minusX = window.innerWidth*0.2+5;
+    let margin = 115;
+    if (document.querySelector('.colors').clientWidth >= 361){
+      minusX = 5;
+      margin = 120;
+    }
     if (erase)
-      context.clearRect(x0-minusX, y0-margin, 50, 50);
+      context.clearRect(x0-minusX-25, y0-margin-25, 50, 50);
     else{
       context.beginPath();
       context.moveTo(x0-minusX, y0-margin);
@@ -74,28 +79,30 @@ let context = canvas.getContext('2d');
   }
 
   function onMouseDown(e){
+    e.preventDefault();
     drawing = true;
-    current.x = e.clientX;
-    current.y = e.clientY;
-/*  current.x = e.clientX||e.touches[0].clientX;
-    current.y = e.clientY||e.touches[0].clientY; */
+    /*current.x = e.clientX;
+    current.y = e.clientY;*/
+    current.x = e.clientX||e.touches[0].clientX;
+    current.y = e.clientY||e.touches[0].clientY; 
   }
 
   function onMouseUp(e){
     if (!drawing) return; 
     drawing = false;
-    drawLine(current.x, current.y, e.clientX, e.clientY, current.color, current.erase, true);
-    //drawLine(current.x, current.y, e.clientX||e.touches[0].clientX, e.clientY||e.touches[0].clientY, current.color, current.erase, true);
+    //drawLine(current.x, current.y, e.clientX, e.clientY, current.color, current.erase, true);
+    drawLine(current.x, current.y, e.clientX||e.touches[0].clientX, e.clientY||e.touches[0].clientY, current.color, current.erase, true);
   }
 
   function onMouseMove(e){
+    e.preventDefault();
     if (!drawing) return;
-    drawLine(current.x, current.y, e.clientX, e.clientY, current.color, current.erase,true);
-    //drawLine(current.x, current.y, e.clientX||e.touches[0].clientX, e.clientY||e.touches[0].clientY, current.color, current.erase,true);
-    current.x = e.clientX;
-    current.y = e.clientY;
-/*  current.x = e.clientX||e.touches[0].clientX;
-    current.y = e.clientY||e.touches[0].clientY; */
+    //drawLine(current.x, current.y, e.clientX, e.clientY, current.color, current.erase,true);
+    drawLine(current.x, current.y, e.clientX||e.touches[0].clientX, e.clientY||e.touches[0].clientY, current.color, current.erase,true);
+    /*current.x = e.clientX; //update plot(x,y)
+    current.y = e.clientY;*/
+    current.x = e.clientX||e.touches[0].clientX;
+    current.y = e.clientY||e.touches[0].clientY; 
   }
 
   function onColorUpdate(e){
@@ -103,7 +110,7 @@ let context = canvas.getContext('2d');
     current.color = e.target.className.split(' ')[1];
   }
 
-  // limit the number of events per second
+/*   // limit the number of events per second
   function throttle(callback, delay) {
     let previousCall = new Date().getTime();
     return function() {
@@ -114,7 +121,7 @@ let context = canvas.getContext('2d');
         callback.apply(null, arguments);
       }
     };
-  }
+  } */
 
   function onDrawingEvent(data){
     let w = canvas.width;
@@ -124,8 +131,11 @@ let context = canvas.getContext('2d');
 
   // make the canvas fill its parent
   function onResize() {
-    canvas.width = window.innerWidth/2;
-    canvas.height = window.innerHeight/2.5;
+    canvas.width = document.querySelector('.whiteboard-container').clientWidth;//window.innerWidth/2;
+    console.log(document.querySelector('.whiteboard').clientWidth);
+    canvas.height = canvas.width/ 2.031;
+    //canvas.width = 670;
+    //canvas.height = 400;
     canvas.style.position = "relative";
     //canvas.style.left = window.innerWidth/4+"px";
   }

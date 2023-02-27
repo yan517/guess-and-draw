@@ -4,7 +4,7 @@ const UserList = document.querySelector('#users');
 const startCounter = document.querySelector('#startCounter');
 const leaveRm = document.querySelector('#leaveButton');
 const rankingList = document.querySelector('#ranking');
-
+let roomGuessword = '';
 
 /* function avoidReload() {
     return window.location.href = `/lounge`;
@@ -14,11 +14,20 @@ window.onload = function() {
     let reloading = sessionStorage.getItem("reloading");
     if (reloading) {
         sessionStorage.removeItem("reloading");
-        return window.location.href = `/lounge`;
+        return window.location.href = `/lounge`; 
     }else{
         sessionStorage.setItem("reloading", "true");
     }
 }
+
+socket.emit('userStatus',sessionStorage.getItem("room"),sessionStorage.getItem("username"),(callback)=>{
+    if (callback){
+        socket.emit('join-room');
+    }else{
+        sessionStorage.removeItem("reloading");
+        return window.location.href = `/lounge`;
+    }
+})
 
 //const socket = io({closeOnBeforeunload: false});
 // Get username and room from URL
@@ -26,17 +35,22 @@ window.onload = function() {
     ignoreQueryPrefix: true
 }); */
 
-socket.on('host', (host, username) =>{
-    if (host)
+socket.on('removeSession',()=>{
+    sessionStorage.removeItem("room");
+    sessionStorage.removeItem("reloading");
+})
+
+socket.on('host', (host, username,startGame) =>{
+    if (host){
         document.querySelector('#startCounter').style.display = 'block';
-    else
+        if(startGame)
+            startCounter.disabled = true;
+    }else
         document.querySelector('#startCounter').style.display = 'none';
-    sessionStorage.setItem("username", username);
 })
 
 socket.on('message', message =>{
     outputMsg(message);
-
     // Scroll down
     document.querySelector('.chat-messages').scrollTop = document.querySelector('.chat-messages').scrollHeight;
 })
@@ -52,40 +66,16 @@ socket.on('roomUsers', ({ room,users }) =>{
 })
 
 socket.on('action', (value) =>{
-/*     if (value === "unlockCanvas"){
-        document.querySelector('.whiteboard').style['pointer-events'] = "all";
-        document.querySelector('.whiteboard-container').style.cursor = "default";
-        document.querySelector('.whiteboard-container').style.opacity = "1";
-        document.querySelector('#msg').disabled = true;
-        document.querySelector('#msg').placeholder = "你正在畫畫哦^_^";
-        document.querySelector('#sendMsg').disabled = true;
-    }else if(value === "lockCanvas"){
+    if(value.name){
+        if(value.name === "onlyLockWhiteboard"){
         document.querySelector('.whiteboard').style['pointer-events'] = "none";
         document.querySelector('.whiteboard-container').style.cursor = "not-allowed";
-        document.querySelector('.whiteboard-container').style.opacity = "0.7";
-        document.querySelector('#msg').disabled = false;
-        document.querySelector('#msg').placeholder = "請猜猜看...";
-        document.querySelector('#sendMsg').disabled = false;
-    }else if(value === "setOriginal"){
-        document.querySelector('#msg').disabled = false;
-        document.querySelector('#sendMsg').disabled = false; 
-        document.querySelector('#msg').placeholder = "輸入文字...";
-        startCounter.disabled = false;
-    }else if(value === "blockInput"){
-        document.querySelector('#msg').disabled = true;
-        document.querySelector('#msg').placeholder = "你已經答對了^^";
-        document.querySelector('#sendMsg').disabled = true;
-    }else if(value === "resetTimer"){
-        document.querySelector('#counter').textContent = 65;
-    }else  */
-    if(value === "onlyLockWhiteboard"){
-        document.querySelector('.whiteboard').style['pointer-events'] = "none";
-        document.querySelector('.whiteboard-container').style.cursor = "not-allowed";
-        document.querySelector('.whiteboard-container').style.opacity = "0.7";
+        //document.querySelector('.whiteboard-container').style.opacity = "0.7";
         document.querySelector('#msg').disabled = true;
         document.querySelector('#sendMsg').disabled = true;
-    }else if(value.name){
-        if(value.name === "endGame"){
+        document.querySelector('#quest').textContent = value.msg;
+        }else if(value.name === "endGame"){
+            document.querySelector('#quest').textContent = "";
             // set msg field to original former
             document.querySelector('#msg').disabled = false;
             document.querySelector('#sendMsg').disabled = false; 
@@ -103,20 +93,16 @@ socket.on('action', (value) =>{
             // lock Canvas
             document.querySelector('.whiteboard').style['pointer-events'] = "none";
             document.querySelector('.whiteboard-container').style.cursor = "not-allowed";
-            document.querySelector('.whiteboard-container').style.opacity = "0.7";
+            //document.querySelector('.whiteboard-container').style.opacity = "0.7";
             document.querySelector('#msg').disabled = false;
             document.querySelector('#msg').placeholder = "請猜猜看...";
             document.querySelector('#sendMsg').disabled = false;
             // clear all drawing
             context.clearRect(0, 0, canvas.width, canvas.height);
-            // output msg
-            outputMsg(value.msg);
-            // Scroll down
-            document.querySelector('.chat-messages').scrollTop = document.querySelector('.chat-messages').scrollHeight;    
         }else if(value.name === "correctResponse"){
-            document.querySelector('#msg').disabled = true;
+            //document.querySelector('#msg').disabled = true;
             document.querySelector('#msg').placeholder = "你已經答對了^^";
-            document.querySelector('#sendMsg').disabled = true;
+            //document.querySelector('#sendMsg').disabled = true;
             // output msg
             outputMsg(value.msg);
             // Scroll down
@@ -125,7 +111,7 @@ socket.on('action', (value) =>{
             // lock Canvas
             document.querySelector('.whiteboard').style['pointer-events'] = "none";
             document.querySelector('.whiteboard-container').style.cursor = "not-allowed";
-            document.querySelector('.whiteboard-container').style.opacity = "0.7";
+            //document.querySelector('.whiteboard-container').style.opacity = "0.7";
             document.querySelector('#msg').disabled = false;
             document.querySelector('#msg').placeholder = "請猜猜看...";
             document.querySelector('#sendMsg').disabled = false;
@@ -136,13 +122,12 @@ socket.on('action', (value) =>{
         }else if(value.name === "gameDrawer"){
             // unlockCanvas
             unlockCanvas();
-            // output msg
-            outputMsg(value.msg);
-            // Scroll down
-            document.querySelector('.chat-messages').scrollTop = document.querySelector('.chat-messages').scrollHeight;               
+            document.querySelector('#quest').textContent = value.msg;        
         }else if(value.name === "nextRoundPreparation"){
             //resetTimer
             document.querySelector('#counter').textContent = 65;
+            // clear question
+            document.querySelector('#quest').textContent = "";
             // output msg
             outputMsg(value.msg);
             // Scroll down
@@ -155,8 +140,8 @@ socket.on('action', (value) =>{
 
 function unlockCanvas(){
     document.querySelector('.whiteboard').style['pointer-events'] = "all";
-    document.querySelector('.whiteboard-container').style.cursor = "default";
-    document.querySelector('.whiteboard-container').style.opacity = "1";
+    document.querySelector('.whiteboard-container').style.cursor = "crosshair";
+    //document.querySelector('.whiteboard-container').style.opacity = "1";
     document.querySelector('#msg').disabled = true;
     document.querySelector('#msg').placeholder = "你正在畫畫哦^_^";
     document.querySelector('#sendMsg').disabled = true;
@@ -189,23 +174,7 @@ socket.on('updateRanking', (rankingArr,user) =>{
                 rankingList.appendChild(li);
             }
             i+=result.length;
-        }/* else{
-            let idx = rankingArr.indexOf(i-1);
-            console.log(idx);
-            if(idx == -1){
-                li.textContent = i+1 + ". " + user[tmp].username + " "+ user[tmp].point+ "分";
-                rankingList.appendChild(li);
-            }else{
-                prePoint = user[idx].point;
-                for (let y = 0; y < user.length; y++) {
-                    if (user[y].point ==  prePoint && y != idx  && y>tmp){
-                        li.textContent = i+1 + ". " + user[y].username + " "+ user[y].point+ "分";
-                        rankingList.appendChild(li);
-                        tmp = y;
-                    }
-                }
-            }
-        } */
+        }
     }
 })
 
@@ -214,7 +183,6 @@ chatForm.addEventListener('submit', (e) => {
     const msg = e.target.elements.msg.value;
     // Emit message to server
     socket.emit('chatMessage', msg);
-
     // Clear input 
     e.target.elements.msg.value = '';
     e.target.elements.msg.focus();
@@ -230,6 +198,7 @@ startCounter.addEventListener('click',(e) =>{
 leaveRm.addEventListener('click',(e) =>{
     let confirmLeave = true;
     sessionStorage.removeItem("reloading");
+    socket.emit('clearSession',true,(callback) =>{});
     document.cookie = 'room=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 })
 

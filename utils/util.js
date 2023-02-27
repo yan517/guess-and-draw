@@ -11,7 +11,7 @@ function formatMessage(username, text){
 function rankings(arr) {
     const sorted = [...arr].sort((a, b) => b - a);
     return arr.map((x) => sorted.indexOf(x));
-  };
+};
 
 module.exports = {
     formatMessage,
