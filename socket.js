@@ -234,9 +234,14 @@ module.exports = function (io) {
     io.to(listofplayer[currentDrawer].id).emit('action', { name: 'gameDrawer', msg: `題目:${guessWord}` });
     let countDown = setInterval(() => {
       counter--;
+      listofplayer = getRoomUsers(currentRoom);
       if (getCorrectPpl(currentRoom).count === (listofplayer.length - 1) && checked) {
         counter = 5;
         checked = false;
+      }
+      if (listofplayer.length <= 1){ // check is less than 2 ppl
+        stopGame = true;
+        counter = 0;
       }
       getCounter = counter;
       io.to(currentRoom).emit('counter', counter);
@@ -246,9 +251,7 @@ module.exports = function (io) {
       }
       if (counter === 0) {
         listofplayer = getRoomUsers(currentRoom);
-        if (listofplayer.length <= 1) // check is less than 2 ppl
-          stopGame = true;
-        else {
+        if (!stopGame){ // check is less than 2 ppl
           temp = listofplayer.map((value) => { return value.point; });
           let rankingArr = rankings(temp);
           io.to(currentRoom).emit('updateRanking', rankingArr, listofplayer);

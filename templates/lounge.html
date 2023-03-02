@@ -8,8 +8,11 @@
 </head>
 <body>
   <div id="cover"></div>
-  <div class="title" style="padding-top: 20px;">Guess & Draw </div>
-  <div id="leaveButton" class="leaveBtn"><a href="/" class="btn">返回首頁</a></div>
+  <div class="titleCombine">
+    <div class="title" style="padding-top: 10px;">Guess & Draw </div>
+    <div id="leaveButton" class="leaveBtn"><a href="/" class="btn">返回首頁</a></div>
+  </div>
+  
   <div class="lounge-container">
     <div class="roomAreaGrid">
     </div>
@@ -29,6 +32,7 @@
               name="room" 
               id="room"
               placeholder="輸入房間..."
+              maxlength="10"
               required
             />
           </div>

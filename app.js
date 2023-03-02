@@ -6,12 +6,30 @@ const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
 
+require('dotenv').config();
+
 let session = require("express-session")({
   secret: "my-secret",
   resave: false,
   saveUninitialized: false
 });
 
+
+const Redis = require("ioredis");
+const redis = new Redis({
+  port: 6379,
+  host: '127.0.0.1',
+  connectTimeout: 10000 // optional
+});
+redis.set("os", "linux");
+
+redis.get("os", (err, result) => {
+  if (err) {
+    console.error(err);
+  } else {
+    console.log(result); // Prints "value"
+  }
+});
 
 /* const cors = require("cors"); */
 const PORT = process.env.PORT || 3500;
