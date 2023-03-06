@@ -1,9 +1,22 @@
 const { formatMessage, rankings } = require('./utils/util');
-const { userJoin, getCurrentUser, userLeave, getRoomUsers, setCorrectPpl, getCorrectPpl, clearCorrectPpl, setAnswer, getAnswer, clearAnswer } = require('./utils/users');
-const { setRoomName, checkOutRoom,getRoomSatus} = require('./utils/lounge');
+const { userJoin, getCurrentUser, userLeave, getRoomUsers, setCorrectPpl, getCorrectPpl, clearCorrectPpl, setAnswer, getAnswer, clearAnswer, asyncUsers, getUserPoint, setUserPoint, delUserPoint, getRmHost, setRmHost, delRmHost, getCounter, setCounter, delCounter} = require('./utils/users');
+const { setRoomName, checkOutRoom,getRoomSatus,getAllRoom} = require('./utils/lounge');
+var redis = require('redis');
+var client = redis.createClient({url: `redis://${process.env.HOST}`});
 
-let total = 575;
-let getCounter = 0;
+client.connect().then(async (res) => {
+  console.log('connected');
+  await client.json.set('roomStatus','.',[]);
+  await client.json.set('users','.',[]);
+  await client.json.set('answer','.',[]);
+  await client.json.set('correctedPpl','.',[]);
+  await client.del('rooms');
+}).catch((err) => {
+  console.log('err: ' + err);
+});
+
+let total = 574;
+let getCount = 0;
 let drawWords = [
   '鐮刀', '雞毛撣子', '水錶', '扳手', '螺絲刀', '指甲鉗', '梳子', '電鑽', '錘子', '公雞'
   , '子彈', '芭蕉扇', '空中飛人', '蒸籠', '暗戀', '露營', '靈魂', '靈車', '水晶球', '芝士蛋糕'
@@ -81,16 +94,18 @@ module.exports = function (io) {
       username = socket.request.session.username;
       room = socket.request.session.room;
       let host = false;
-      if (getRoomUsers(room).length < 1) {
+      let roomHost = await getRoomUsers(room);
+      if (!roomHost) {
+        await setRmHost(room,username);
         host = true;
       }
-      const user = userJoin(socket.id, username, room, host);
-      startGame = startGameOrNot(user.room);
-      console.log(startGame);
-      setRoomName(room);
-      io.emit('reloadLoungeStatus');
+      const user = await userJoin(socket.id, username, room, host);
+      let startGame = await startGameOrNot(user.room);
+      //console.log("startGame: " + startGame);
+      await setRoomName(room);
+      await setUserPoint(socket.id,0);
+      io.emit('reloadLoungeStatus',await getAllRoom());
       socket.join(user.room);
-
       socket.emit('host', host, username, startGame);
       // Send to single user
       // Welcome current connected user
@@ -100,16 +115,20 @@ module.exports = function (io) {
       // Run when others client connect
       socket.broadcast.to(user.room).emit('message', formatMessage('管理員', `${user.username} 進來了`));
 
-      let users = getRoomUsers(user.room);
+      let users = await getRoomUsers(user.room);
       // Send users and room info
       io.to(user.room).emit('roomUsers', {
         room: user.room,
-        users: users
+        users: await users
       });
       for (let i = 0; i < users.length; i++) {
         io.to(users[i].id).emit('identify', users[i].username);
       }
     })
+
+/*     async () => {await sub.subscribe('channel', (message) => {
+      console.log(message); // 'message'
+    });} */
 
     socket.on("userStatus", (room, username, callback) => {
       if (socket.request.session.room) {
@@ -123,72 +142,92 @@ module.exports = function (io) {
       }
     })
 
+  socket.on('asynUsers', (data) => {
+    asyncUsers(data);
+  });
+  
     // Run when client disconnect
     socket.on("disconnect", async () => {
       console.log(`User disConnected: ${socket.id}`);
       if (socket.request.session.room) {
         //console.log(socket.request.session);
         //delete socket.request.session.username;
-        checkOutRoom(socket.request.session.room);
+        await checkOutRoom(socket.request.session.room);
         delete socket.request.session.room;
         socket.request.session.save();
         socket.emit('removeSession');
-        const user = userLeave(socket.id);
+        const user = await userLeave(socket.id);
         if (user) {
-          let otherRoomUsers = getRoomUsers(user.room);
-          if (otherRoomUsers.length > 0) {
-            otherRoomUsers[0].host = true; // Set other ppl to host
-            let startGame = startGameOrNot(otherRoomUsers[0].room);
-            getRoomSatus(otherRoomUsers[0].room)[0].host = otherRoomUsers[0].username;
-            io.to(otherRoomUsers[0].id).emit('host', true, otherRoomUsers[0].username, startGame);
+          let key = user.id;   
+          await delUserPoint(key); 
+          await delRmHost(user.room);
+          //console.log("disconnect user: ");
+          //console.log(user);
+          let otherRoomUsers = await getRoomUsers(user.room);
+          if(otherRoomUsers){
+            if (otherRoomUsers.length > 0) {
+              await setRmHost(otherRoomUsers[0].room,otherRoomUsers[0].username);
+              otherRoomUsers[0].host = true; // Set other ppl to host
+              let startGame = await startGameOrNot(otherRoomUsers[0].room);
+              //await getRoomSatus(otherRoomUsers[0].room)[0].host = otherRoomUsers[0].username;
+              io.to(otherRoomUsers[0].id).emit('host', true, otherRoomUsers[0].username, startGame);
+            }
           }
-
           io.to(user.room).emit('message', formatMessage('管理員', `${user.username} 離開了`));
 
           // Send users and room info
-          let users = getRoomUsers(user.room);
-          io.to(user.room).emit('roomUsers', {
-            room: user.room,
-            users: users
-          });
-
-          for (let i = 0; i < users.length; i++) {
-            io.to(users[i].id).emit('identify', users[i].username, users[i].host);
+          let users = await getRoomUsers(user.room);
+          if(users){
+            io.to(user.room).emit('roomUsers', {
+              room: user.room,
+              users: users
+            });
+  
+            for (let i = 0; i < users.length; i++) {
+              io.to(users[i].id).emit('identify', users[i].username, users[i].host);
+            }
           }
         }
-        io.emit('reloadLoungeStatus');
+        io.emit('reloadLoungeStatus',await getAllRoom());
       }
 
     })
 
 
-    function startGameOrNot(room) {
+    async function startGameOrNot(room) {
       let startGame = false;
-      let startGameTemp = getAnswer(room);
-      console.log(startGameTemp);
-      if (startGameTemp.length === 1)
-        startGame = true;
-      return startGame;
+      let statusOfGame = await getAnswer(room);
+        if(statusOfGame){
+          if (statusOfGame.playing)
+            startGame = true;
+        }
+        return startGame;
     }
 
     // Listen for chatMessage
-    socket.on("chatMessage", (msg) => {
-      const user = getCurrentUser(socket.id);
-      let startGame = startGameOrNot(user.room);
+    socket.on("chatMessage", async (msg) => {
+      const user = await getCurrentUser(socket.id);
+      //console.log("chatMessage user");
+      //console.log(user);
+      let startGame = await startGameOrNot(user.room);
       if (startGame) {
-        let guessWord = getAnswer(user.room);
-        if (msg === guessWord[0].word) {
+        let guessWord = await getAnswer(user.room);
+        if (msg === guessWord.word) {
           let check = true;
-          if(getCorrectPpl(user.room)){
-            if(getCorrectPpl(user.room).pplArr.includes(socket.id))
+          let checkbfgetCorrectPpl = await getCorrectPpl(user.room);
+          if(checkbfgetCorrectPpl){
+            if(checkbfgetCorrectPpl.pplArr.includes(socket.id))
               check = false;
           }
           if(check){
-            let value = getCounter;
-            user.point += value;
+            let value = await getCounter(user.room);
+            let keyid = socket.id;
+            let point = parseInt(await getUserPoint(keyid));
+            point += parseInt(value);
+            await setUserPoint(keyid,point);
             io.to(socket.id).emit('action', { name: 'correctResponse', msg: formatMessage(user.username, msg) });
-            io.to(user.room).emit('message', formatMessage('管理員', `恭喜${user.username}答對了! 加了${value}分，目前分數是${user.point}`));            
-            setCorrectPpl(user.room, user.id);
+            io.to(user.room).emit('message', formatMessage('管理員', `恭喜${user.username}答對了! 加了${value}分，目前分數是${point}`));            
+            await setCorrectPpl(user.room, user.id);
           }else {
             io.to(user.room).emit('message', formatMessage(user.username, msg));
           }  
@@ -201,83 +240,101 @@ module.exports = function (io) {
     })
 
     // Listen for user who are drawing
-    socket.on('drawing', (data) => {
-      const user = getCurrentUser(socket.id);
+    socket.on('drawing', async (data) => {
+      const user = await getCurrentUser(socket.id);
       socket.broadcast.to(user.room).emit('drawing', data);
     });
 
-    socket.on('startCounter', (counter) => {
-      const user = getCurrentUser(socket.id);
-      let listofplayer = getRoomUsers(user.room); // Get all users in room
-      for (let i = 0; i < listofplayer.length; i++) {
-        listofplayer[i].point = 0;   // Reset players point to zero
+    socket.on('startCounter', async (counter) => {
+      const user = await getCurrentUser(socket.id);
+      let listofplayer = await getRoomUsers(user.room); // Get all users in room
+      if(listofplayer){
+        for (let i = 0; i < listofplayer.length; i++) {
+          let key = listofplayer[i].id;   
+          await setUserPoint(key,0); // Reset players point to zero
+        }
+        gameStart(counter, await listofplayer);
       }
       //io.to(user.room).emit('message', formatMessage('管理員',`遊戲開始嘍!!!!!`));
       // Game start
-      gameStart(counter, listofplayer);
-
     });
   })
 
-  function gameStart(counter, listofplayer) {
+  async function gameStart(counter, listofplayer) {
     //console.log(listofplayer);
     let currentDrawer = 0;
     let stopGame = false;
     let currentRoom = listofplayer[currentDrawer].room;
-    let roomSatus = getRoomSatus(currentRoom);
+    let roomSatus = await getRoomSatus(currentRoom);
     let winScore = roomSatus[0].score;
+    console.log("winScore: " + winScore);
     let checked = true; // avoid looping when all user answer correctly
-    let temp;
     let guessWord = drawWords[Math.floor(Math.random() * total)];
-    setAnswer(currentRoom, guessWord, true);
+    await setAnswer(currentRoom, guessWord, true);
     io.to(currentRoom).emit('action', { name: 'gameStartPreparation', msg: formatMessage('管理員', `遊戲開始嘍!!!!! 現在是${listofplayer[currentDrawer].username}畫畫`) });
     io.to(listofplayer[currentDrawer].id).emit('action', { name: 'gameDrawer', msg: `題目:${guessWord}` });
-    let countDown = setInterval(() => {
+    let countDown = setInterval(async () => {
       counter--;
-      listofplayer = getRoomUsers(currentRoom);
-      if (getCorrectPpl(currentRoom).count === (listofplayer.length - 1) && checked) {
-        counter = 5;
-        checked = false;
-      }
-      if (listofplayer.length <= 1){ // check is less than 2 ppl
-        stopGame = true;
-        counter = 0;
-      }
-      getCounter = counter;
-      io.to(currentRoom).emit('counter', counter);
-      if (counter === 5) {
-        let guessWord = getAnswer(currentRoom);
-        io.to(currentRoom).emit('action', { name: 'onlyLockWhiteboard', msg: `上回答案是${guessWord[0].word}` });
-      }
-      if (counter === 0) {
-        listofplayer = getRoomUsers(currentRoom);
-        if (!stopGame){ // check is less than 2 ppl
-          temp = listofplayer.map((value) => { return value.point; });
-          let rankingArr = rankings(temp);
-          io.to(currentRoom).emit('updateRanking', rankingArr, listofplayer);
+      await setCounter(currentRoom,counter);
+      listofplayer = await getRoomUsers(currentRoom);
+      if(listofplayer){
+        let getCorrectPeople = await getCorrectPpl(currentRoom);
+        let getCorrectPplCount = 0;
+        if(getCorrectPeople){
+          getCorrectPplCount = getCorrectPeople.count;
         }
-        io.to(currentRoom).emit('action', { name: 'clearRound' });
-        checked = true;
-        counter = 65;
-        currentDrawer++;
-        clearCorrectPpl(currentRoom);
-        clearAnswer(currentRoom);
-        if (Math.max.apply(Math, temp) >= winScore || stopGame) {
-          clearInterval(countDown);
-          if (stopGame) {
-            io.to(currentRoom).emit('action', { name: 'endGame', msg: formatMessage('管理員', `遊戲人數不足,遊戲結束!!`) });
-          } else {
-            // Find the index of winner 
-            let index = temp.indexOf(Math.max.apply(Math, temp));
-            io.to(currentRoom).emit('action', { name: 'endGame', msg: formatMessage('管理員', `恭喜${listofplayer[index].username}贏得這回合!! \n 遊戲結束!!`) });
+        if (getCorrectPplCount === (listofplayer.length - 1) && checked) {
+          counter = 5;
+          checked = false;
+        }
+
+        if (listofplayer.length <= 1){ // check is less than 2 ppl
+          stopGame = true;
+          counter = 0;
+        }
+        getCount = counter;
+        io.to(currentRoom).emit('counter', counter);
+        if (counter === 5) {
+          let guessWord = await getAnswer(currentRoom);
+          if(guessWord)
+            io.to(currentRoom).emit('action', { name: 'onlyLockWhiteboard', msg: `上回答案是${guessWord.word}` });
+        }
+        if (counter === 0) {
+          let temp = [];
+          //listofplayer = await getRoomUsers(currentRoom);
+          if (!stopGame){ // check is less than 2 ppl
+            for (let i = 0; i < listofplayer.length; i++) {
+              let getUserPt = parseInt(await getUserPoint(listofplayer[i].id));
+              listofplayer[i].point = getUserPt;
+              temp.push(getUserPt);
+            }
+            //emp = await listofplayer.map((value) => { return value.point; });
+            let rankingArr = rankings(temp);
+            io.to(currentRoom).emit('updateRanking', rankingArr, listofplayer);
           }
-        } else {
-          if (currentDrawer >= listofplayer.length)
-            currentDrawer = 0;
-          let guessWord = drawWords[Math.floor(Math.random() * total)];
-          setAnswer(currentRoom, guessWord, true);
-          io.to(currentRoom).emit('action', { name: 'nextRoundPreparation', msg: formatMessage('管理員', `現在輪到${listofplayer[currentDrawer].username}畫畫`) });
-          io.to(listofplayer[currentDrawer].id).emit('action', { name: 'gameDrawer', msg: `題目:${guessWord}` });
+          io.to(currentRoom).emit('action', { name: 'clearRound' });
+          checked = true;
+          counter = 65;
+          currentDrawer++;
+          await clearCorrectPpl(currentRoom);
+          await clearAnswer(currentRoom);
+          if (Math.max.apply(Math, temp) >= winScore || stopGame) {
+            clearInterval(countDown);
+            if (stopGame) {
+              io.to(currentRoom).emit('action', { name: 'endGame', msg: formatMessage('管理員', `遊戲人數不足,遊戲結束!!`) });
+            } else {
+              // Find the index of winner 
+              let index = temp.indexOf(Math.max.apply(Math, temp));
+              io.to(currentRoom).emit('action', { name: 'endGame', msg: formatMessage('管理員', `恭喜${listofplayer[index].username}贏得這回合!! \n 遊戲結束!!`) });
+            }
+          } else {
+            if (currentDrawer >= listofplayer.length)
+              currentDrawer = 0;
+            let guessWord = drawWords[Math.floor(Math.random() * total)];
+            await setAnswer(currentRoom, guessWord, true);
+            io.to(currentRoom).emit('action', { name: 'nextRoundPreparation', msg: formatMessage('管理員', `現在輪到${listofplayer[currentDrawer].username}畫畫`) });
+            io.to(listofplayer[currentDrawer].id).emit('action', { name: 'gameDrawer', msg: `題目:${guessWord}` });
+          }
         }
       }
     }, 1000)

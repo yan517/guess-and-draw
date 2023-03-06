@@ -3,24 +3,29 @@ const router = express.Router();
 const {getAllRoom,setRoomSatus,getRoomSatus} = require('../utils/lounge.js');
 const {getRoomUsers} = require('../utils/users');
 
-router.get('/', (req, res, then) => {
-    const obj = getAllRoom();
+router.get('/', async (req, res, then) => {
+    const response = await getAllRoom();
+    let obj = await response;
+    console.log("data4");
+    console.log(obj);
     return res.json({ status: 'success', result: obj})
 }); 
 
-router.post('/', (req, res, then) => {
+router.post('/', async (req, res, then) => {
     if(req.session.room){
         return res.json({ status: 'error', message: "你已進入房間"});
     }else if(req.body){
-        let roomUser = getRoomUsers(req.body.room);
+        let roomUser = await getRoomUsers(req.body.room);
         let ppl = 0;
-        if(roomUser.length < 1){
+        if(!roomUser){
             let host = req.body.username;
             ppl = req.body.ppl;
             let score = req.body.score;
-            setRoomSatus(req.body.room,host,ppl,score);
+            await setRoomSatus(req.body.room,host,ppl,score);
+            return res.json({ status: 'success', result: {room:req.body.room}})
         }else{
-            let roomSatus = getRoomSatus(req.body.room);
+            let roomSatus = await getRoomSatus(req.body.room);
+            console.log(roomSatus);
             ppl = roomSatus[0].ppl;
         }
         if(roomUser.length < ppl){

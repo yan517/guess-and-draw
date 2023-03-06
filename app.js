@@ -5,7 +5,10 @@ const socketio = require("socket.io");
 const app = express(); 
 const server = http.createServer(app);
 const io = socketio(server);
+const { createClient } = require('redis');
+const { createAdapter } = require('@socket.io/redis-adapter');
 
+//io.adapter(redis({ host: 'localhost', port: 6379 }));
 require('dotenv').config();
 
 let session = require("express-session")({
@@ -14,22 +17,8 @@ let session = require("express-session")({
   saveUninitialized: false
 });
 
-
-const Redis = require("ioredis");
-const redis = new Redis({
-  port: 6379,
-  host: '127.0.0.1',
-  connectTimeout: 10000 // optional
-});
-redis.set("os", "linux");
-
-redis.get("os", (err, result) => {
-  if (err) {
-    console.error(err);
-  } else {
-    console.log(result); // Prints "value"
-  }
-});
+const pubClient = createClient({url: `redis://${process.env.HOST}`});
+const subClient = pubClient.duplicate();
 
 /* const cors = require("cors"); */
 const PORT = process.env.PORT || 3500;
@@ -55,6 +44,7 @@ let currentLoungeStatus = require('./routes/lounge');
   };
   
 app.use(cors(corsOptions)); */
+
 app.use(express.json());
 
 app.use('/currentUserStatus', currentUserStatus);
@@ -64,7 +54,7 @@ app.get("/", (req,res) =>{
   res.sendFile(path.join(__dirname, "templates", "index.html"));
 });
 
-app.get("/lounge", (req,res) =>{
+app.get("/lounge", async (req,res) =>{
   res.sendFile(path.join(__dirname, "templates", "lounge.html"));
 });
 
@@ -78,9 +68,14 @@ const wrap = middleware => (socket, next) => middleware(socket.request, {}, next
 
 io.use(wrap(session));
 
+Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
+  io.adapter(createAdapter(pubClient, subClient));
+  io.listen(3000);
+  require('./socket')(io);
+});
+
 // Load Socket.IO controller
 //const socketController = require('./socket')(io);
-require('./socket')(io);
 
 server.listen(PORT,()=>{
     console.log(`Server running on port ${PORT}`);
