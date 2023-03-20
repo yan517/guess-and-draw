@@ -9,6 +9,9 @@ quickly to earn point. <br/>
 
 The score is according to remaining time, which means the faster you answer correctly, the higher score you get.
 
+![image](https://user-images.githubusercontent.com/111167537/226401112-0756a603-9394-4b98-bb1b-a9439d496226.png)
+![image](https://user-images.githubusercontent.com/111167537/226401495-3e1b24bb-388f-4746-bf8a-ab83d4d3e3d6.png)
+
 
 ## Table of Contents
 
@@ -17,7 +20,7 @@ The score is according to remaining time, which means the faster you answer corr
   - [Environment](#environment)
   - [Database](#database)
   - [Library](#library)
-  - [Cloud Services](#cloud-services)
+  - [Cloud Service](#cloud-services)
   - [Reverse Proxy](#reverse-proxy)
   - [Version Control](#version-control)
 - [Architecture](#architecture)
