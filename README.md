@@ -20,6 +20,7 @@ The score is according to remaining time, which means the faster you answer corr
   - [Cloud Services](#cloud-services)
   - [Reverse Proxy](#reverse-proxy)
   - [Version Control](#version-control)
+- [Architecture](#architecture)
 - [Frontend Technique](#frontend-technique)
 - [Contact](#contact)
 
@@ -55,6 +56,9 @@ The score is according to remaining time, which means the faster you answer corr
 ### Version Control
 * Git
 * GitHub
+
+## Architecture
+
 
 ## Frontend Technique
 * HTML
