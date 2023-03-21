@@ -61,7 +61,8 @@ The score is according to remaining time, which means the faster you answer corr
 * GitHub
 
 ## Architecture
-
+![image](https://user-images.githubusercontent.com/111167537/226687567-8b0221f3-35fb-4218-884b-ef11535406f1.png)
+![image](https://user-images.githubusercontent.com/111167537/226687974-fb856140-1ae1-4153-80a7-e79732085d61.png)
 
 ## Frontend Technique
 * HTML
