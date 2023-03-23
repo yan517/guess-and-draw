@@ -9,8 +9,17 @@ quickly to earn point. <br/>
 
 The score is according to remaining time, which means the faster you answer correctly, the higher score you get.
 
+#### Game screens
 ![image](https://user-images.githubusercontent.com/111167537/226401112-0756a603-9394-4b98-bb1b-a9439d496226.png)
 ![image](https://user-images.githubusercontent.com/111167537/226401495-3e1b24bb-388f-4746-bf8a-ab83d4d3e3d6.png)
+
+#### Open rooms
+![video1041750567_AdobeExpress (1)](https://user-images.githubusercontent.com/111167537/227258468-e6b058d2-14ee-44de-a55e-577617a01798.gif)
+
+#### Playing game
+![video1726517142](https://user-images.githubusercontent.com/111167537/227270389-ed7640da-a411-4e25-b48b-be504a80fced.gif)
+
+https://user-images.githubusercontent.com/111167537/227270819-44d536f6-4766-4c71-b031-2e181a21d87e.mp4
 
 
 ## Table of Contents
